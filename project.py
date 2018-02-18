@@ -236,6 +236,13 @@ def disconnect():
         flash("You were not logged in")
         return redirect(url_for('home'))
 
+@app.route('/edititem/<int:id>')
+def profile(id):
+    if login_session['username'] is None:
+        return redirect('/login')
+
+@app.route('/home')
+    
 
 
 if __name__ == '__main__':
