@@ -242,6 +242,8 @@ def profile(id):
         return redirect('/login')
 
 @app.route('/home')
+def home():
+    
     
 
 
