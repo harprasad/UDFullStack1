@@ -43,7 +43,18 @@
             </div>
             <div class="col-sm-9">
                 <h6><small>ITEMS</small></h6>
-                {{ITEMS}}
+                <div class="row">
+                    {% for item in ITEMS %}
+                    <div class="card mr-4 mb-4 box-shadow" style="width: 18rem;">
+                        <div class="card-body">
+                            <h5 class="card-title">{{item.name}}</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">{{item.category.name}}</h6>
+                            <p class="card-text">{{item.info}}</p>
+                            <a href="items/{{item.id}}" class="card-link">More</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>

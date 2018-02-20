@@ -248,14 +248,11 @@ def home():
         categories += '<a class="list-group-item" href="/categories/'+ str(category.id) +'"'+ '>'+ category.name +'</a></li>'
     
     markedupCategories = Markup(categories)
-    for item in session.query(SportsItem).order_by(SportsItem.id.desc()).limit(5):
-        recententries += '<a href="/items/' + str(item.id) +'"'+'>'+ item.name + ':' + item.category.name+ '</a>'+'<br>'
-    markedupEntries = Markup(recententries)
-    return render_template('home.html',CATEGORIES = markedupCategories,ENTRIES = markedupEntries) 
+    items =  session.query(SportsItem).order_by(SportsItem.id.desc()).limit(10)
+    return render_template('home.html',CATEGORIES = markedupCategories,ITEMS = items) 
     
 @app.route('/categories/<int:id>')
 def showcategory(id):
-    items=''
     categories = ""
     for category in session.query(Categories):
         if(category.id == id):
@@ -263,11 +260,10 @@ def showcategory(id):
         else:
             categories += '<a class="list-group-item" href="/categories/'+ str(category.id) +'"'+ '>'+ category.name +'</a></li>'
     markedupCategories = Markup(categories)
-
+    items = []
     for item in session.query(SportsItem).filter_by(CategoryId = id):
-        items += '<a href="/items/' + str(item.id) +'"'+'>'+ item.name + '</a>'+'<br>'
-    markedupEntries = Markup(items)
-    return render_template('category.html',CATEGORIES = markedupCategories,ITEMS = markedupEntries) 
+        items.append(item)
+    return render_template('category.html',CATEGORIES = markedupCategories,ITEMS = items) 
 
 @app.route('/items/<int:id>')
 def ShowItem(id):
@@ -276,20 +272,28 @@ def ShowItem(id):
 
 @app.route('/edititem/<int:id>',methods=['GET','POST'])
 def profile(id):
-    # if 'username' not in login_session:
-    #     return redirect('/login') 
+    if 'username' not in login_session:
+        return redirect('/login')
+    item = session.query(SportsItem).filter_by(id = id).one()
+    categoryoptions = ""
+    for catgory in session.query(Categories):
+        if(item.CategoryId == catgory.id):
+            categoryoptions += '<option value="' + str(catgory.id) + '" selected>'+ catgory.name +'</option>'
+        else:
+            categoryoptions += '<option value="' + str(catgory.id) + '">'+ catgory.name +'</option>'
+    markedupOptions = Markup(categoryoptions) 
     if(request.method == 'GET'):
-        item = session.query(SportsItem).filter_by(id = id).one()
-        categoryoptions = ""
-        for catgory in session.query(Categories):
-            if(item.CategoryId == catgory.id):
-                categoryoptions += '<option value="' + str(catgory.id) + '" selected>'+ catgory.name +'</option>'
-            else:
-                categoryoptions += '<option value="' + str(catgory.id) + '">'+ catgory.name +'</option>'
-        markedupOptions = Markup(categoryoptions)
         csrftoken = generateToken()
         return render_template('edititem.html',OPTIONS = markedupOptions,ITEMNAME =  item.name,DESCRIPTION = item.info,CATEGORY = item.CategoryId,CSRFTOKEN = csrftoken)
-
+    if(request.method == 'POST'):
+        if('csrftoken' not in login_session or request.form['csrftoken'] != login_session['csrftoken']):
+            abort(400)
+        item.name = request.form['itemname']
+        item.info = request.form['description']
+        item.CategoryId = request.form['categories']
+        session.commit()
+        csrftoken = generateToken()
+        return render_template('edititem.html',OPTIONS = markedupOptions,MESSAGE = "Updated",ITEMNAME =  item.name,DESCRIPTION = item.info,CATEGORY = item.CategoryId,CSRFTOKEN = csrftoken)
 
 @app.route('/additem',methods=['GET','POST'])
 def additem():
@@ -312,12 +316,25 @@ def additem():
         for catgory in session.query(Categories):
             categoryoptions += '<option value="' + str(catgory.id) + '">'+ catgory.name +'</option>'
         markedupOptions = Markup(categoryoptions)
-        return render_template("additem.html",OPTIONS = markedupOptions,MESSAGE = "Added " +request.form['itemname'])
+        csrftoken = generateToken()
+        return render_template("additem.html",OPTIONS = markedupOptions,MESSAGE = "Added " +request.form['itemname'],CSRFTOKEN = csrftoken)
 
-
-
-
-
+@app.route('/deleteitem/<int:id>',methods=['GET','POST'])
+def deleteItem(id):
+    if 'username' not in login_session:
+        return redirect('/login')
+    if(request.method == 'GET'):
+        item = session.query(SportsItem).filter_by(id = id).one()
+        csrftoken = generateToken()
+        return render_template('deleteitem.html',CSRFTOKEN = csrftoken,ITEMNAME = item.name)
+    if(request.method == 'POST'):
+        if('csrftoken' not in login_session or request.form['csrftoken'] != login_session['csrftoken']):
+            abort(400)
+        item = session.query(SportsItem).filter_by(id = id).one()
+        session.delete(item)
+        session.commit()
+        del login_session['csrftoken']
+        return redirect('/')
 
 
 def generateToken():
