@@ -17,6 +17,7 @@ class Categories(Base):
        return {
            'name'         : self.name,
            'id'           : self.id,
+           'items'        : [],
        }
 
 class SportsItem(Base):
@@ -33,6 +34,8 @@ class SportsItem(Base):
             'name': self.name,
             'info': self.info,
             'id': self.id,
+            'categoryID':self.CategoryId,
+            'categoryName':self.category.name
         }
 
 engine = create_engine('sqlite:///restaurantmenuwithusers.db')

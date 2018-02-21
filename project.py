@@ -21,7 +21,7 @@ DBSession = sessionmaker(bind= engine)
 session = DBSession()
 
 CLIENT_ID = json.loads(open('client_secrets.json','r').read())['web']['client_id']
-
+credentials = None
 
 @app.route('/login')
 def ShowLogin():
@@ -41,6 +41,7 @@ def gconnect():
         oauth_flow = flow_from_clientsecrets('client_secrets.json',scope='')
         oauth_flow.redirect_uri = 'postmessage'
         credentials = oauth_flow.step2_exchange(code)
+       
     except FlowExchangeError:
         response = make_response(json.dumps('Failed to upgrade the athorization code'),401)
         response.headers['Content-Type'] = 'application/json'
@@ -85,7 +86,7 @@ def gconnect():
     login_session['username'] = data['name']
     login_session['picture'] = data['picture']
     login_session['email'] = data['email']
-
+    login_session['provider'] = 'google'
     output = ''
     output += '<h1>Welcome, '
     output += login_session['username']
@@ -188,12 +189,7 @@ def fbconnect():
 
     login_session['picture'] = data["data"]["url"]
 
-    # see if user exists
-    user_id = getUserID(login_session['email'])
-    if not user_id:
-        user_id = createUser(login_session)
-    login_session['user_id'] = user_id
-
+ 
     output = ''
     output += '<h1>Welcome, '
     output += login_session['username']
@@ -231,7 +227,6 @@ def disconnect():
         del login_session['username']
         del login_session['email']
         del login_session['picture']
-        del login_session['user_id']
         del login_session['provider']
         flash("You have successfully been logged out.")
         return redirect(url_for('home'))
@@ -249,7 +244,7 @@ def home():
     
     markedupCategories = Markup(categories)
     items =  session.query(SportsItem).order_by(SportsItem.id.desc()).limit(10)
-    return render_template('home.html',CATEGORIES = markedupCategories,ITEMS = items) 
+    return render_template('home.html',CATEGORIES = markedupCategories,ITEMS = items,SESSION = login_session) 
     
 @app.route('/categories/<int:id>')
 def showcategory(id):
@@ -263,12 +258,12 @@ def showcategory(id):
     items = []
     for item in session.query(SportsItem).filter_by(CategoryId = id):
         items.append(item)
-    return render_template('category.html',CATEGORIES = markedupCategories,ITEMS = items) 
+    return render_template('category.html',CATEGORIES = markedupCategories,ITEMS = items,SESSION = login_session) 
 
 @app.route('/items/<int:id>')
 def ShowItem(id):
     item = session.query(SportsItem).filter_by(id = id).one()
-    return render_template('item.html',ITEMNAME =  item.name,DESCRIPTION = item.info,ITEMID=item.id)
+    return render_template('item.html',ITEMNAME =  item.name,DESCRIPTION = item.info,ITEMID=item.id,SESSION = login_session)
 
 @app.route('/edititem/<int:id>',methods=['GET','POST'])
 def profile(id):
@@ -336,12 +331,24 @@ def deleteItem(id):
         del login_session['csrftoken']
         return redirect('/')
 
-
 def generateToken():
     token = ''.join(random.choice(string.ascii_uppercase + string.digits)
                 for x in xrange(32))
     login_session['csrftoken'] = token
     return token
+
+#API codes starts here
+@app.route('/api/v1.0/catalog')    
+def showCatalog():
+    CategorieList = []
+    for category in session.query(Categories).all():
+        categoryobj = category.serialize
+        for item in session.query(SportsItem).filter_by(CategoryId = category.id):
+            categoryobj['items'].append(item.serialize)
+
+        CategorieList.append(categoryobj)
+    return jsonify(Categories = CategorieList)
+
 
 if __name__ == '__main__':
   app.secret_key = 'super_secret_key'

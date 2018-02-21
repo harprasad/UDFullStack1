@@ -29,7 +29,11 @@
                                 <a class="nav-link" href="/additem">Add Item <span class="sr-only">(current)</span></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/login">Login<span class="sr-only">(current)</span></a>
+                            {% if 'username' not in SESSION %}
+                                <a class="nav-link" href="/login">Login<span class="sr-only">(current)</span></a>
+                            {% else %}
+                                <a class="nav-link" href="/disconnect">Logout<span class="sr-only">(current)</span></a>
+                            {%endif%}
                         </li>
                       </ul>
                     </div>
