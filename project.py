@@ -1,9 +1,9 @@
-from flask import Flask, render_template, request, redirect,jsonify, url_for, flash
-app = Flask(__name__)
+from flask import Flask, render_template, request, redirect
+from flask import jsonify, url_for, flash
 from flask import Markup
 from sqlalchemy import create_engine, asc
 from sqlalchemy.orm import sessionmaker
-from database_setup import Categories,SportsItem,engine
+from database_setup import Categories, SportsItem, engine
 from flask import session as login_session
 import random
 import string
@@ -16,34 +16,40 @@ import requests
 from sqlalchemy import desc
 from flask import abort
 
+app = Flask(__name__)
+
 #Connect to Database and create database session
-DBSession = sessionmaker(bind= engine)
+DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
-CLIENT_ID = json.loads(open('client_secrets.json','r').read())['web']['client_id']
+CLIENT_ID = json.loads(open('client_secrets.json', 'r').read())[
+    'web']['client_id']
 credentials = None
+
 
 @app.route('/login')
 def ShowLogin():
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
-                for x in xrange(32))
+                    for x in xrange(32))
     login_session['state'] = state
-    return render_template('login.html',STATE = state)
+    return render_template('login.html', STATE=state)
 
-@app.route('/gconnect',methods=['POST'])
+
+@app.route('/gconnect', methods=['POST'])
 def gconnect():
     if request.args.get('state') != login_session['state']:
-        response = make_response(json.dumps('Invalid state tokens'),401)
+        response = make_response(json.dumps('Invalid state tokens'), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
     code = request.data
     try:
-        oauth_flow = flow_from_clientsecrets('client_secrets.json',scope='')
+        oauth_flow = flow_from_clientsecrets('client_secrets.json', scope='')
         oauth_flow.redirect_uri = 'postmessage'
         credentials = oauth_flow.step2_exchange(code)
-       
+
     except FlowExchangeError:
-        response = make_response(json.dumps('Failed to upgrade the athorization code'),401)
+        response = make_response(json.dumps(
+            'Failed to upgrade the athorization code'), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
     access_token = credentials.access_token
@@ -63,7 +69,7 @@ def gconnect():
             json.dumps("Token's user ID doesn't match given user ID."), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
-        
+
     stored_access_token = login_session.get('access_token')
     stored_gplus_id = login_session.get('gplus_id')
     if stored_access_token is not None and gplus_id == stored_gplus_id:
@@ -98,17 +104,19 @@ def gconnect():
     print "done!"
     return output
 
+
 @app.route('/gdisconect')
 def gdisconnect():
     if credentials is None:
-        response = make_response(json.dumps('current user not connected'),401)
+        response = make_response(json.dumps('current user not connected'), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
 
     access_token = credentials.access_token
     if access_token is None:
         print 'Access Token is None'
-        response = make_response(json.dumps('Current user not connected.'), 401)
+        response = make_response(json.dumps(
+            'Current user not connected.'), 401)
         response.headers['Content-Type'] = 'application/json'
         return response
     print 'In gdisconnect access token is %s', access_token
@@ -129,11 +137,10 @@ def gdisconnect():
         response.headers['Content-Type'] = 'application/json'
         return response
     else:
-        response = make_response(json.dumps('Failed to revoke token for given user.', 400))
+        response = make_response(json.dumps(
+            'Failed to revoke token for given user.', 400))
         response.headers['Content-Type'] = 'application/json'
         return response
-
-
 
 
 @app.route('/fbconnect', methods=['POST'])
@@ -145,7 +152,6 @@ def fbconnect():
     access_token = request.data
     print "access token received %s " % access_token
 
-
     app_id = json.loads(open('fb_client_secrets.json', 'r').read())[
         'web']['app_id']
     app_secret = json.loads(
@@ -154,7 +160,6 @@ def fbconnect():
         app_id, app_secret, access_token)
     h = httplib2.Http()
     result = h.request(url, 'GET')[1]
-
 
     # Use token to get user info from API
     userinfo_url = "https://graph.facebook.com/v2.8/me"
@@ -189,7 +194,6 @@ def fbconnect():
 
     login_session['picture'] = data["data"]["url"]
 
- 
     output = ''
     output += '<h1>Welcome, '
     output += login_session['username']
@@ -208,12 +212,15 @@ def fbdisconnect():
     facebook_id = login_session['facebook_id']
     # The access token must me included to successfully logout
     access_token = login_session['access_token']
-    url = 'https://graph.facebook.com/%s/permissions?access_token=%s' % (facebook_id,access_token)
+    url = 'https://graph.facebook.com/%s/permissions?access_token=%s' % (
+        facebook_id, access_token)
     h = httplib2.Http()
     result = h.request(url, 'DELETE')[1]
     return "you have been logged out"
 
 # Disconnect based on provider
+
+
 @app.route('/disconnect')
 def disconnect():
     if 'provider' in login_session:
@@ -240,46 +247,54 @@ def home():
     categories = ""
     recententries = ""
     for category in session.query(Categories):
-        categories += '<a class="list-group-item" href="/categories/'+ str(category.id) +'"'+ '>'+ category.name +'</a></li>'
-    
+        categories += '<a class="list-group-item" href="/categories/' + \
+            str(category.id) + '"' + '>' + category.name + '</a></li>'
+
     markedupCategories = Markup(categories)
-    items =  session.query(SportsItem).order_by(SportsItem.id.desc()).limit(10)
-    return render_template('home.html',CATEGORIES = markedupCategories,ITEMS = items,SESSION = login_session) 
-    
+    items = session.query(SportsItem).order_by(SportsItem.id.desc()).limit(10)
+    return render_template('home.html', CATEGORIES=markedupCategories, ITEMS=items, SESSION=login_session)
+
+
 @app.route('/categories/<int:id>')
 def showcategory(id):
     categories = ""
     for category in session.query(Categories):
         if(category.id == id):
-            categories += '<a class="list-group-item active" href="/categories/'+ str(category.id) +'"'+ '>'+ category.name +'</a></li>'
+            categories += '<a class="list-group-item active" href="/categories/' + \
+                str(category.id) + '"' + '>' + category.name + '</a></li>'
         else:
-            categories += '<a class="list-group-item" href="/categories/'+ str(category.id) +'"'+ '>'+ category.name +'</a></li>'
+            categories += '<a class="list-group-item" href="/categories/' + \
+                str(category.id) + '"' + '>' + category.name + '</a></li>'
     markedupCategories = Markup(categories)
     items = []
-    for item in session.query(SportsItem).filter_by(CategoryId = id):
+    for item in session.query(SportsItem).filter_by(CategoryId=id):
         items.append(item)
-    return render_template('category.html',CATEGORIES = markedupCategories,ITEMS = items,SESSION = login_session) 
+    return render_template('category.html', CATEGORIES=markedupCategories, ITEMS=items, SESSION=login_session)
+
 
 @app.route('/items/<int:id>')
 def ShowItem(id):
-    item = session.query(SportsItem).filter_by(id = id).one()
-    return render_template('item.html',ITEMNAME =  item.name,DESCRIPTION = item.info,ITEMID=item.id,SESSION = login_session)
+    item = session.query(SportsItem).filter_by(id=id).one()
+    return render_template('item.html', ITEMNAME=item.name, DESCRIPTION=item.info, ITEMID=item.id, SESSION=login_session)
 
-@app.route('/edititem/<int:id>',methods=['GET','POST'])
+
+@app.route('/edititem/<int:id>', methods=['GET', 'POST'])
 def profile(id):
     if 'username' not in login_session:
         return redirect('/login')
-    item = session.query(SportsItem).filter_by(id = id).one()
+    item = session.query(SportsItem).filter_by(id=id).one()
     categoryoptions = ""
     for catgory in session.query(Categories):
         if(item.CategoryId == catgory.id):
-            categoryoptions += '<option value="' + str(catgory.id) + '" selected>'+ catgory.name +'</option>'
+            categoryoptions += '<option value="' + \
+                str(catgory.id) + '" selected>' + catgory.name + '</option>'
         else:
-            categoryoptions += '<option value="' + str(catgory.id) + '">'+ catgory.name +'</option>'
-    markedupOptions = Markup(categoryoptions) 
+            categoryoptions += '<option value="' + \
+                str(catgory.id) + '">' + catgory.name + '</option>'
+    markedupOptions = Markup(categoryoptions)
     if(request.method == 'GET'):
         csrftoken = generateToken()
-        return render_template('edititem.html',OPTIONS = markedupOptions,ITEMNAME =  item.name,DESCRIPTION = item.info,CATEGORY = item.CategoryId,CSRFTOKEN = csrftoken)
+        return render_template('edititem.html', OPTIONS=markedupOptions, ITEMNAME=item.name, DESCRIPTION=item.info, CATEGORY=item.CategoryId, CSRFTOKEN=csrftoken)
     if(request.method == 'POST'):
         if('csrftoken' not in login_session or request.form['csrftoken'] != login_session['csrftoken']):
             abort(400)
@@ -288,69 +303,77 @@ def profile(id):
         item.CategoryId = request.form['categories']
         session.commit()
         csrftoken = generateToken()
-        return render_template('edititem.html',OPTIONS = markedupOptions,MESSAGE = "Updated",ITEMNAME =  item.name,DESCRIPTION = item.info,CATEGORY = item.CategoryId,CSRFTOKEN = csrftoken)
+        return render_template('edititem.html', OPTIONS=markedupOptions, MESSAGE="Updated", ITEMNAME=item.name, DESCRIPTION=item.info, CATEGORY=item.CategoryId, CSRFTOKEN=csrftoken)
 
-@app.route('/additem',methods=['GET','POST'])
+
+@app.route('/additem', methods=['GET', 'POST'])
 def additem():
     if 'username' not in login_session:
-        return redirect('/login') 
+        return redirect('/login')
     if(request.method == 'GET'):
         categoryoptions = ""
         for catgory in session.query(Categories):
-            categoryoptions += '<option value="' + str(catgory.id) + '">'+ catgory.name +'</option>'
+            categoryoptions += '<option value="' + \
+                str(catgory.id) + '">' + catgory.name + '</option>'
         markedupOptions = Markup(categoryoptions)
         csrftoken = generateToken()
-        return render_template("additem.html",OPTIONS = markedupOptions,CSRFTOKEN = csrftoken)
+        return render_template("additem.html", OPTIONS=markedupOptions, CSRFTOKEN=csrftoken)
     if(request.method == 'POST'):
         if('csrftoken' not in login_session or request.form['csrftoken'] != login_session['csrftoken']):
             abort(400)
-        item = SportsItem(name = request.form['itemname'],info = request.form['description'],CategoryId = request.form['categories'])
+        item = SportsItem(
+            name=request.form['itemname'], info=request.form['description'], CategoryId=request.form['categories'])
         session.add(item)
         session.commit()
         categoryoptions = ""
         for catgory in session.query(Categories):
-            categoryoptions += '<option value="' + str(catgory.id) + '">'+ catgory.name +'</option>'
+            categoryoptions += '<option value="' + \
+                str(catgory.id) + '">' + catgory.name + '</option>'
         markedupOptions = Markup(categoryoptions)
         csrftoken = generateToken()
-        return render_template("additem.html",OPTIONS = markedupOptions,MESSAGE = "Added " +request.form['itemname'],CSRFTOKEN = csrftoken)
+        return render_template("additem.html", OPTIONS=markedupOptions, MESSAGE="Added " + request.form['itemname'], CSRFTOKEN=csrftoken)
 
-@app.route('/deleteitem/<int:id>',methods=['GET','POST'])
+
+@app.route('/deleteitem/<int:id>', methods=['GET', 'POST'])
 def deleteItem(id):
     if 'username' not in login_session:
         return redirect('/login')
     if(request.method == 'GET'):
-        item = session.query(SportsItem).filter_by(id = id).one()
+        item = session.query(SportsItem).filter_by(id=id).one()
         csrftoken = generateToken()
-        return render_template('deleteitem.html',CSRFTOKEN = csrftoken,ITEMNAME = item.name)
+        return render_template('deleteitem.html', CSRFTOKEN=csrftoken, ITEMNAME=item.name)
     if(request.method == 'POST'):
         if('csrftoken' not in login_session or request.form['csrftoken'] != login_session['csrftoken']):
             abort(400)
-        item = session.query(SportsItem).filter_by(id = id).one()
+        item = session.query(SportsItem).filter_by(id=id).one()
         session.delete(item)
         session.commit()
         del login_session['csrftoken']
         return redirect('/')
 
+
 def generateToken():
     token = ''.join(random.choice(string.ascii_uppercase + string.digits)
-                for x in xrange(32))
+                    for x in xrange(32))
     login_session['csrftoken'] = token
     return token
 
 #API codes starts here
-@app.route('/api/v1.0/catalog')    
+
+
+@app.route('/api/v1.0/catalog')
 def showCatalog():
     CategorieList = []
     for category in session.query(Categories).all():
         categoryobj = category.serialize
-        for item in session.query(SportsItem).filter_by(CategoryId = category.id):
+        for item in session.query(SportsItem).filter_by(CategoryId=category.id):
             categoryobj['items'].append(item.serialize)
 
         CategorieList.append(categoryobj)
-    return jsonify(Categories = CategorieList)
+    return jsonify(Categories=CategorieList)
 
 
 if __name__ == '__main__':
   app.secret_key = 'super_secret_key'
   app.debug = True
-  app.run(host = '0.0.0.0', port = 5000)
+  app.run(host='0.0.0.0', port=5000)
