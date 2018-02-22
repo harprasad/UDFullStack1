@@ -16,7 +16,12 @@ import requests
 from sqlalchemy import desc
 from flask import abort
 
+
 app = Flask(__name__)
+
+from site.home import mod
+
+app.register_blueprint(site.home.mod)
 
 #Connect to Database and create database session
 DBSession = sessionmaker(bind=engine)
@@ -242,68 +247,6 @@ def disconnect():
         return redirect(url_for('home'))
 
 
-@app.route('/')
-def home():
-    categories = ""
-    recententries = ""
-    for category in session.query(Categories):
-        categories += '<a class="list-group-item" href="/categories/' + \
-            str(category.id) + '"' + '>' + category.name + '</a></li>'
-
-    markedupCategories = Markup(categories)
-    items = session.query(SportsItem).order_by(SportsItem.id.desc()).limit(10)
-    return render_template('home.html', CATEGORIES=markedupCategories, ITEMS=items, SESSION=login_session)
-
-
-@app.route('/categories/<int:id>')
-def showcategory(id):
-    categories = ""
-    for category in session.query(Categories):
-        if(category.id == id):
-            categories += '<a class="list-group-item active" href="/categories/' + \
-                str(category.id) + '"' + '>' + category.name + '</a></li>'
-        else:
-            categories += '<a class="list-group-item" href="/categories/' + \
-                str(category.id) + '"' + '>' + category.name + '</a></li>'
-    markedupCategories = Markup(categories)
-    items = []
-    for item in session.query(SportsItem).filter_by(CategoryId=id):
-        items.append(item)
-    return render_template('category.html', CATEGORIES=markedupCategories, ITEMS=items, SESSION=login_session)
-
-
-@app.route('/items/<int:id>')
-def ShowItem(id):
-    item = session.query(SportsItem).filter_by(id=id).one()
-    return render_template('item.html', ITEMNAME=item.name, DESCRIPTION=item.info, ITEMID=item.id, SESSION=login_session)
-
-
-@app.route('/edititem/<int:id>', methods=['GET', 'POST'])
-def profile(id):
-    if 'username' not in login_session:
-        return redirect('/login')
-    item = session.query(SportsItem).filter_by(id=id).one()
-    categoryoptions = ""
-    for catgory in session.query(Categories):
-        if(item.CategoryId == catgory.id):
-            categoryoptions += '<option value="' + \
-                str(catgory.id) + '" selected>' + catgory.name + '</option>'
-        else:
-            categoryoptions += '<option value="' + \
-                str(catgory.id) + '">' + catgory.name + '</option>'
-    markedupOptions = Markup(categoryoptions)
-    if(request.method == 'GET'):
-        csrftoken = generateToken()
-        return render_template('edititem.html', OPTIONS=markedupOptions, ITEMNAME=item.name, DESCRIPTION=item.info, CATEGORY=item.CategoryId, CSRFTOKEN=csrftoken)
-    if(request.method == 'POST'):
-        if('csrftoken' not in login_session or request.form['csrftoken'] != login_session['csrftoken']):
-            abort(400)
-        item.name = request.form['itemname']
-        item.info = request.form['description']
-        item.CategoryId = request.form['categories']
-        session.commit()
-        csrftoken = generateToken()
-        return render_template('edititem.html', OPTIONS=markedupOptions, MESSAGE="Updated", ITEMNAME=item.name, DESCRIPTION=item.info, CATEGORY=item.CategoryId, CSRFTOKEN=csrftoken)
 
 
 @app.route('/additem', methods=['GET', 'POST'])
