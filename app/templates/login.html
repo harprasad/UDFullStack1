@@ -26,8 +26,21 @@
 <body>  
 
 <div class="container-fluid vertical-center">
-  <!-- GOOGLE PLUS SIGN IN BUTTON-->   
+  
   <div style="text-align:center;margin:auto;left:0;right:0;">
+    <div>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class=flashes>
+            {% for message in messages %}
+            <li>{{ message }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- GOOGLE PLUS SIGN IN BUTTON-->   
     <div id="signinButton">
       <span class="g-signin"
         data-scope="openid email"

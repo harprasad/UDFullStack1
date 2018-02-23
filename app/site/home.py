@@ -17,4 +17,7 @@ def home():
 
     markedupCategories = Markup(categories)
     items = session.query(SportsItem).order_by(SportsItem.id.desc()).limit(10)
-    return render_template('home.html', CATEGORIES=markedupCategories, ITEMS=items, SESSION=login_session)
+    return render_template('home.html', 
+                            CATEGORIES=markedupCategories, 
+                            ITEMS=items, 
+                            SESSION=login_session)

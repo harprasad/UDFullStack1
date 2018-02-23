@@ -6,14 +6,14 @@ from database_setup import Categories, SportsItem
 from app import login_session
 from app import session
 from app import generateToken
+from app import login_required
 
 mod = Blueprint('edititem',__name__)
 
 
 @mod.route('/edititem/<int:id>', methods=['GET', 'POST'])
+@login_required
 def profile(id):
-    # if 'username' not in login_session:
-    #     return redirect('/login')
     item = session.query(SportsItem).filter_by(id=id).one()
     categoryoptions = ""
     for catgory in session.query(Categories):

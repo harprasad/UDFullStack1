@@ -8,6 +8,7 @@ mod = Blueprint('categories',__name__)
 
 @mod.route('/categories/<int:id>')
 def showcategory(id):
+    '''Displays items belonging to a specific category'''
     categories = ""
     for category in session.query(Categories):
         if(category.id == id):
