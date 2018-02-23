@@ -9,6 +9,7 @@ DBSession = sessionmaker(bind=engine)
 session = DBSession()
 
 def generateToken():
+    """Generates a random token and stores in login_seesion mainly used as csrf token"""
     token = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in xrange(32))
     login_session['csrftoken'] = token
