@@ -2,7 +2,7 @@ from flask import Blueprint,render_template
 from flask import Markup,redirect,request
 import random
 import string
-from database_setup import Categories, SportsItem
+from app.database_setup import User,Categories, SportsItem
 from app import login_session
 from app import session
 from app import generateToken
@@ -11,9 +11,9 @@ from app import login_required
 mod = Blueprint('additem',__name__)
 
 @mod.route('/additem', methods=['GET', 'POST'])
-'''A function to allow logged in users to add items'''
 @login_required
 def additem():
+    '''A function to allow logged in users to add items'''
     if(request.method == 'GET'):
         categoryoptions = ""
         for catgory in session.query(Categories):

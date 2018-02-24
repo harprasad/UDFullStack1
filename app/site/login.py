@@ -1,7 +1,8 @@
 from flask import Blueprint,render_template
 import random
 import string
-from app import login_session
+from app import login_session,createUser,getUserID,getUserInfo
+from app.database_setup import User
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 import httplib2
@@ -23,6 +24,7 @@ def ShowLogin():
                     for x in xrange(32))
     login_session['state'] = state
     return render_template('login.html', STATE=state)
+
 
 @mod.route('/gconnect', methods=['POST'])
 def gconnect():
@@ -83,6 +85,13 @@ def gconnect():
     login_session['picture'] = data['picture']
     login_session['email'] = data['email']
     login_session['provider'] = 'google'
+
+    # see if user exists, if it doesn't make a new one
+    user_id = getUserID(data["email"])
+    if not user_id:
+        user_id = createUser(login_session)
+    login_session['user_id'] = user_id
+
     output = ''
     output += '<h1>Welcome, '
     output += login_session['username']
@@ -175,6 +184,12 @@ def fbconnect():
 
     login_session['picture'] = data["data"]["url"]
 
+        # see if user exists
+    user_id = getUserID(login_session['email'])
+    if not user_id:
+        user_id = createUser(login_session)
+    login_session['user_id'] = user_id
+
     output = ''
     output += '<h1>Welcome, '
     output += login_session['username']
@@ -217,8 +232,10 @@ def disconnect():
         del login_session['email']
         del login_session['picture']
         del login_session['provider']
+        del login_session['user_id']
         flash("You have successfully been logged out.")
         return redirect(url_for('home.home'))
     else:
         flash("You were not logged in")
         return redirect(url_for('home.home'))
+

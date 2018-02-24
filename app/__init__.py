@@ -1,14 +1,16 @@
-from flask import Flask,redirect,flash
+from flask import Flask, redirect, flash
 from flask import session as login_session
 from functools import wraps
 from sqlalchemy.orm import sessionmaker
-from database_setup import engine
+from database_setup import engine,User,Categories,SportsItem
+
 import random
 import string
 
 
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
+
 
 def generateToken():
     """Generates a random token and stores in login_seesion mainly used as csrf token"""
@@ -17,15 +19,40 @@ def generateToken():
     login_session['csrftoken'] = token
     return token
 
+
 def login_required(function):
     @wraps(function)
-    def wrapper( *args, **kwargs ):
+    def wrapper(*args, **kwargs):
         if 'username' in login_session:
             function()
         else:
             flash('A user must be logged in to add update or delete item.')
             return redirect('/login')
     return wrapper
+
+
+def createUser(login_session):
+    newUser = User(name=login_session['username'],
+                   email=login_session['email']
+                   )
+    session.add(newUser)
+    session.commit()
+    user = session.query(User).filter_by(email=login_session['email']).one()
+    return user.id
+
+
+def getUserInfo(user_id):
+    user = session.query(User).filter_by(id=user_id).one()
+    return user
+
+
+def getUserID(email):
+    try:
+        user = session.query(User).filter_by(email=email).one()
+        return user.id
+    except:
+        return None
+
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key'
@@ -47,4 +74,4 @@ app.register_blueprint(site.additem.mod)
 app.register_blueprint(site.login.mod)
 app.register_blueprint(site.deleteitem.mod)
 
-app.register_blueprint(api.endpoints.mod,uri_prefix = '/api')
+app.register_blueprint(api.endpoints.mod, uri_prefix='/api')
