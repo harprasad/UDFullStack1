@@ -1,11 +1,12 @@
-from flask import Blueprint,render_template
+from flask import Blueprint, render_template
 from flask import Markup
-from database_setup import Categories, SportsItem
+from app.database_setup import Categories, SportsItem
 from app import login_session
 from app import session
 from flask import jsonify
 
-mod = Blueprint('endpoints',__name__)
+mod = Blueprint('endpoints', __name__)
+
 
 @mod.route('/api/v1.0/catalog')
 def showCatalog():
@@ -23,6 +24,7 @@ def showCatalog():
 def ShowItem(id):
     item = session.query(SportsItem).filter_by(id=id).one()
     return jsonify(Item=item.serialize)
+
 
 @mod.route('/api/v1.0/category/<int:id>')
 def ShowCaategory(id):

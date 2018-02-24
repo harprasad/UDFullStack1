@@ -1,8 +1,8 @@
-from flask import Flask, redirect, flash
+from flask import Flask, redirect, flash, url_for
 from flask import session as login_session
 from functools import wraps
 from sqlalchemy.orm import sessionmaker
-from database_setup import engine,User,Categories,SportsItem
+from database_setup import engine, User, Categories, SportsItem
 
 import random
 import string
@@ -24,7 +24,7 @@ def login_required(function):
     @wraps(function)
     def wrapper(*args, **kwargs):
         if 'username' in login_session:
-            function()
+            return function(*args, **kwargs)
         else:
             flash('A user must be logged in to add update or delete item.')
             return redirect('/login')
@@ -32,6 +32,7 @@ def login_required(function):
 
 
 def createUser(login_session):
+    '''Creates a new user'''
     newUser = User(name=login_session['username'],
                    email=login_session['email']
                    )
@@ -42,11 +43,13 @@ def createUser(login_session):
 
 
 def getUserInfo(user_id):
+    '''Return an user object based on id'''
     user = session.query(User).filter_by(id=user_id).one()
     return user
 
 
 def getUserID(email):
+    '''Returns userId based on eemail'''
     try:
         user = session.query(User).filter_by(email=email).one()
         return user.id

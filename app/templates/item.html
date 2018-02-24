@@ -44,7 +44,15 @@
             <p>{{DESCRIPTION}}</p><br>
             <a class = "btn btn-outline-primary" href="/edititem/{{ITEMID}}">Edit</a>
             <a class = "btn btn-outline-secondary" href="/deleteitem/{{ITEMID}}">Delete</a>
-
+            {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul class=flashes>
+                {% for message in messages %}
+                <li>{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+            {% endwith %}
         </div>
 
     </div>

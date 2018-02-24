@@ -1,11 +1,12 @@
-from flask import Blueprint,render_template
+from flask import Blueprint, render_template
 from flask import Markup
-from database_setup import Categories, SportsItem
+from app.database_setup import Categories, SportsItem
 from app import login_session
 from app import session
 
 
-mod = Blueprint('home',__name__)
+mod = Blueprint('home', __name__)
+
 
 @mod.route('/')
 def home():
@@ -17,7 +18,9 @@ def home():
 
     markedupCategories = Markup(categories)
     items = session.query(SportsItem).order_by(SportsItem.id.desc()).limit(10)
-    return render_template('home.html', 
-                            CATEGORIES=markedupCategories, 
-                            ITEMS=items, 
-                            SESSION=login_session)
+    return render_template(
+        'home.html',
+        CATEGORIES=markedupCategories,
+        ITEMS=items,
+        SESSION=login_session
+    )

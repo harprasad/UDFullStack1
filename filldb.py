@@ -1,4 +1,4 @@
-import database_setup
+from app import database_setup
 from sqlalchemy.orm import sessionmaker
 DBSession = sessionmaker(bind = database_setup.engine)
 session = DBSession()

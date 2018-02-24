@@ -1,10 +1,11 @@
-from flask import Blueprint,render_template
+from flask import Blueprint, render_template
 from flask import Markup
 from app import login_session
 from app import session
-from database_setup import Categories, SportsItem
+from app.database_setup import Categories, SportsItem
 
-mod = Blueprint('categories',__name__)
+mod = Blueprint('categories', __name__)
+
 
 @mod.route('/categories/<int:id>')
 def showcategory(id):
@@ -21,4 +22,9 @@ def showcategory(id):
     items = []
     for item in session.query(SportsItem).filter_by(CategoryId=id):
         items.append(item)
-    return render_template('category.html', CATEGORIES=markedupCategories, ITEMS=items, SESSION=login_session)
+    return render_template(
+        'category.html',
+        CATEGORIES=markedupCategories,
+        ITEMS=items,
+        SESSION=login_session
+    )
