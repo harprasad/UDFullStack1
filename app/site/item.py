@@ -9,6 +9,7 @@ mod = Blueprint('item', __name__)
 
 @mod.route('/items/<int:id>')
 def ShowItem(id):
+    '''Fetch an Item from database and display its details'''
     item = session.query(SportsItem).filter_by(id=id).one()
     return render_template(
         'item.html',

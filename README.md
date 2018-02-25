@@ -27,7 +27,7 @@ This application has the follwoing features.
 * View Recent Entries by visiting the home page
 * View detailed information about any Item by clicking on the **more** link.
 * You can add Items after you login .
-* you can update or delete items addded by you.
+* You can update or delete items addded by you.
 
 
 ## API ##
