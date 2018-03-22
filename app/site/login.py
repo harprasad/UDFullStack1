@@ -7,13 +7,18 @@ from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 import httplib2
 import json
+import os
 from flask import make_response,request,flash,redirect,url_for 
 
 import requests
 
 mod = Blueprint('login',__name__)
 
-CLIENT_ID = json.loads(open('client_secrets.json', 'r').read())['web']['client_id']
+
+PROJECT_ROOT = os.path.realpath(os.path.dirname(os.path.dirname(__file__)))
+json_url = os.path.join(PROJECT_ROOT, 'client_secrets.json')
+CLIENT_ID = json.load(open(json_url))['web']['client_id']
+# CLIENT_ID = json.loads(open('client_secrets.json', 'r').read())['web']['client_id']
 credentials = None
 
 
