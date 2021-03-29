@@ -51,7 +51,7 @@ ptyprocess==0.5.2
 pyasn1==0.4.2
 pyasn1-modules==0.2.1
 pycodestyle==2.3.1
-Pygments==2.2.0
+Pygments==2.7.4
 pylint==1.8.2
 python-dateutil==2.6.1
 pyzmq==16.0.4
